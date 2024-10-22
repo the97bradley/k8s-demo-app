@@ -21,8 +21,8 @@ resource "google_container_cluster" "primary" {
 }
 
 
-resource "google_storage_bucket" "mongo-backups" {
-  name          = "mongo-backup-bucket"
+resource "google_storage_bucket" "mongo-backups-bucket" {
+  name          = "mongo-backups-bucket"
   location      = "US"
   uniform_bucket_level_access = true
 
