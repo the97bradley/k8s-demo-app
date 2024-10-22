@@ -1,6 +1,10 @@
 terraform {
-  backend "gcs" {
-    bucket = "k8s-proj-state-file" 
+  backend "remote" {
+    organization = "k8s-proj"  
+
+    workspaces {
+      name = "k8s-demo-app" 
+    }
   }
 }
 
