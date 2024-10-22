@@ -1,3 +1,10 @@
+terraform {
+  backend "gcs" {
+    bucket = "k8s-proj-state-file" 
+  }
+}
+
+
 provider "google" {
   project     = var.project_id
   region      = "us-central1"

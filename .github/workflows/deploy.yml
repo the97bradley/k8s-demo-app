@@ -21,10 +21,6 @@ jobs:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
 
 
-      # Terraform refresh
-    - name: Terraform refresh
-      run: terraform init
-
     # Terraform Init and Apply (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform init
