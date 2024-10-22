@@ -1,7 +1,7 @@
 provider "google" {
   project     = var.project_id
   region      = "us-central1"
-  credentials = var.gcp_credentials
+  credentials = file("account.json")
 }
 
 resource "google_container_cluster" "primary" {
