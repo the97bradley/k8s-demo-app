@@ -1,4 +1,4 @@
-name: Deploy Wiz Project with IaC
+name: Deploy Project with IaC
 
 on:
   push:
