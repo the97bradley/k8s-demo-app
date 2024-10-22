@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout code
+    - name: Checkout repository
       uses: actions/checkout@v2
 
     # Set up Google Cloud SDK
@@ -18,42 +18,23 @@ jobs:
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-
-
-    # # Write the GCP Service Account key to a file
-    # - name: Write Service Account Key to File
-    #   run: |
-    #     echo "${{ secrets.GCP_SA_KEY }}" > account.json
-
-
-    # Terraform Init and Apply
+    # Terraform Init and Apply (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform init
 
     - name: Terraform Apply
       run: terraform apply -auto-approve
       env:
-        TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-     # Cleanup the Service Account file
-    - name: Temp File Cleanup
-      run: rm account.json
-
-    # Build Docker Image and Push to GCR
-    - name: Set up Docker Buildx
-      uses: docker/setup-buildx-action@v1
-
-    - name: Build and Push Docker Image
+    # Configure kubectl to use GKE cluster credentials
+    - name: Authenticate kubectl with GKE
       run: |
-        docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-app:latest .
-        docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-app:latest
+        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }} --project ${{ secrets.GCP_PROJECT_ID }}
 
-    # Deploy the app to GKE
-    - name: Deploy to GKE
+    # Apply Kubernetes manifests (Deployment and Service)
+    - name: Apply Kubernetes manifests
       run: |
-        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }}
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
