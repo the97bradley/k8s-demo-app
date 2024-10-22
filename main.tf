@@ -7,11 +7,6 @@ provider "google" {
 resource "google_container_cluster" "primary" {
   name     = "wiz-cluster"
   location = "us-central1-a"
-}
-
-resource "google_container_cluster" "primary" {
-  name     = "wiz-cluster"
-  location = "us-central1-a"
 
   initial_node_count = 3  # Ensure cluster has nodes
 
