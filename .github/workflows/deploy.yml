@@ -19,6 +19,11 @@ jobs:
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCP_SA_KEY }}
+        export_default_credentials: true               
+
+    # Pass the Terraform Cloud token
+    - name: Set Terraform Cloud Token
+      run: echo "credentials \"app.terraform.io\" { token = \"${{ secrets.TF_CLOUD_TOKEN }}\" }" > ~/.terraform.d/credentials.tfrc.json
 
 
     # Terraform Init and Apply (Provision GKE and Infrastructure)
