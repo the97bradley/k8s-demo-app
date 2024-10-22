@@ -20,6 +20,11 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCP_SA_KEY }}
 
+
+      # Terraform refresh
+    - name: Terraform Init
+      run: terraform init
+
     # Terraform Init and Apply (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform init
