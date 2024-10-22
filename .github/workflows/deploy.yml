@@ -27,7 +27,8 @@ jobs:
     - name: Terraform Apply
       run: terraform apply -auto-approve
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+        TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
+        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
 
     # Build Docker Image and Push to GCR
     - name: Set up Docker Buildx
