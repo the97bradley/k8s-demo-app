@@ -22,10 +22,10 @@ jobs:
 
 
 
-    # Write the GCP Service Account key to a file
-    - name: Write Service Account Key to File
-      run: |
-        echo "${{ secrets.GCP_SA_KEY }}" > account.json
+    # # Write the GCP Service Account key to a file
+    # - name: Write Service Account Key to File
+    #   run: |
+    #     echo "${{ secrets.GCP_SA_KEY }}" > account.json
 
 
     # Terraform Init and Apply
