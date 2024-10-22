@@ -1,1 +1,1 @@
-project_id = "wiz-proj-439418"
+project_id = "k8s-proj-439420"
