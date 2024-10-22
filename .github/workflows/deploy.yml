@@ -20,6 +20,14 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCP_SA_KEY }}
 
+
+
+    # # Write the GCP Service Account key to a file
+    # - name: Write Service Account Key to File
+    #   run: |
+    #     echo "${{ secrets.GCP_SA_KEY }}" > account.json
+
+
     # Terraform Init and Apply
     - name: Terraform Init
       run: terraform init
@@ -29,6 +37,10 @@ jobs:
       env:
         TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+     # Cleanup the Service Account file
+    - name: Temp File Cleanup
+      run: rm account.json
 
     # Build Docker Image and Push to GCR
     - name: Set up Docker Buildx
