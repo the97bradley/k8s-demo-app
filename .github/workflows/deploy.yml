@@ -18,6 +18,7 @@ jobs:
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
+        gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
     # Terraform Init and Apply (Provision GKE and Infrastructure)
     - name: Terraform Init
@@ -27,6 +28,8 @@ jobs:
       run: terraform apply -auto-approve
       env:
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
+
 
     # Configure kubectl to use GKE cluster credentials
     - name: Authenticate kubectl with GKE
