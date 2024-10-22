@@ -7,24 +7,14 @@ provider "google" {
 resource "google_container_cluster" "primary" {
   name     = "wiz-cluster"
   location = "us-central1-a"
-}
 
-resource "google_compute_instance" "mongo-db" {
-  name         = "mongo-db"
-  machine_type = "e2-medium"
-  zone         = "us-central1-a"
+  initial_node_count = 3  # Ensure cluster has nodes
 
-  boot_disk {
-    initialize_params {
-      image = "debian-cloud/debian-9"
-    }
-  }
-
-  network_interface {
-    network = "default"
-    access_config {}
+  node_config {
+    machine_type = "e2-medium"
   }
 }
+
 
 resource "google_storage_bucket" "mongo-backups" {
   name          = "mongo-backup-bucket"
