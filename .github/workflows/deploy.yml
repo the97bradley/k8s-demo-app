@@ -23,7 +23,7 @@ jobs:
 
       # Terraform refresh
     - name: Terraform refresh
-      run: terraform init
+      run: terraform refresh
 
     # Terraform Init and Apply (Provision GKE and Infrastructure)
     - name: Terraform Init
