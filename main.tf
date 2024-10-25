@@ -21,7 +21,7 @@ resource "google_container_cluster" "primary" {
 }
 
 
-resource "google_storage_bucket" "mongo-backups-bucket" {
+resource "google_storage_bucket" "mongo-backups-bucket-k8s-project" {
   name          = "mongo-backups-bucket"
   location      = "US"
   uniform_bucket_level_access = true
