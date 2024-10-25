@@ -21,16 +21,16 @@ jobs:
         service_account_key: ${{ secrets.GCP_SA_KEY }}
 
 
-      # Terraform refresh
-    - name: Terraform refresh
-      run: terraform refresh
+    #   # Terraform refresh
+    # - name: Terraform refresh
+    #   run: terraform refresh
 
     # Terraform Init and Apply (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform init
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve
+      run: terraform apply -auto-approve -refresh-only
       env:
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
