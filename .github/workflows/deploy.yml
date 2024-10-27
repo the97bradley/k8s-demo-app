@@ -36,6 +36,12 @@ jobs:
         TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
 
+# Set Active Account 
+    - name: Set Active Account
+      run: |
+        gcloud config set account "$(jq -r .client_email <<< "${{ secrets.GCP_SA_KEY }}")"
+
+
     # Configure kubectl to use GKE cluster credentials
     - name: Authenticate kubectl with GKE
       run: |
