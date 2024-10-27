@@ -36,12 +36,12 @@ jobs:
         TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
 
- # Authenticate with Service Account
+    # Write Service Account Key to a JSON File and Authenticate
     - name: Authenticate Service Account
       run: |
-        echo "${{ secrets.GCP_SA_KEY }}" | gcloud auth activate-service-account --key-file=-
+        echo "${{ secrets.GCP_SA_KEY }}" > sa-key.json
+        gcloud auth activate-service-account --key-file=sa-key.json
         gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-
 
     # Configure kubectl to use GKE cluster credentials
     - name: Authenticate kubectl with GKE
