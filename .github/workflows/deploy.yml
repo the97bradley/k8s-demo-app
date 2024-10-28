@@ -30,26 +30,27 @@ jobs:
       run: terraform init
 
     - name: Terraform Apply
-      run: terraform apply -auto-approve -refresh-only
+      run: terraform apply -auto-approve 
       env:
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
 
-    # Write Service Account Key to a JSON File and Authenticate
-    - name: Authenticate Service Account
+   # Configure kubectl to use GKE cluster credentials
+    - name: Authenticate with GKE
       run: |
-        printf "%s" "${{ secrets.GCP_SA_KEY }}" > sa-key.json
+        echo "${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}" > sa-key.json
         gcloud auth activate-service-account --key-file=sa-key.json
         gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-
-    # Configure kubectl to use GKE cluster credentials
-    - name: Authenticate kubectl with GKE
-      run: |
-        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }} --project ${{ secrets.GCP_PROJECT_ID }}
+        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }}
 
     # Apply Kubernetes manifests (Deployment and Service)
     - name: Apply Kubernetes manifests
       run: |
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
+
+
+      # Clean up the JSON file after use for security
+    - name: Clean up
+      run: rm sa-key.json
