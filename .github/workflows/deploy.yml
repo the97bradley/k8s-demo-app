@@ -13,6 +13,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+      # Create the Service Account Key File
+    - name: Create sa-key.json for Authentication
+      run: echo "${{ secrets.GCP_SA_KEY }}" > sa-key.json
+
     # Set up Google Cloud SDK
     - name: Set up Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
@@ -20,16 +24,28 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-    # Terraform Init and Apply (Provision GKE and Infrastructure)
+    # Terraform Init (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform init
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
+    # Import Existing GKE Cluster
     - name: Import Existing GKE Cluster
       run: terraform import google_container_cluster.primary projects/${{ secrets.GCP_PROJECT_ID }}/locations/${{ secrets.GKE_CLUSTER_ZONE }}/clusters/${{ secrets.GKE_CLUSTER_NAME }}
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
+
+    # Terraform Apply
     - name: Terraform Apply
       run: terraform apply -auto-approve 
       env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
