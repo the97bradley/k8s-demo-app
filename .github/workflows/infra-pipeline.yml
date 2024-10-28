@@ -3,8 +3,8 @@ name: Deploy Project with IaC
 on:
   push:
     branches:
-      - main
-
+      - infra
+    
 jobs:
   deploy:
     runs-on: ubuntu-latest
