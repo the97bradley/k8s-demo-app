@@ -3,8 +3,12 @@ name: Deploy Project with IaC
 on:
   push:
     branches:
-      - infra
-    
+      - main
+    paths:
+      - "infra/**"  # Only trigger if files in the infra directory are changed
+      - ".github/workflows/infra-pipeline.yml"  # Trigger on changes to this workflow file
+
+
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -26,40 +30,42 @@ jobs:
 
     # Terraform Init (Provision GKE and Infrastructure)
     - name: Terraform Init
-      run: terraform init
+      run: terraform -chdir=infra init
       env:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
-    # Import Existing GKE Cluster
-    - name: Import Existing GKE Cluster
-      run: terraform import google_container_cluster.primary projects/${{ secrets.GCP_PROJECT_ID }}/locations/${{ secrets.GKE_CLUSTER_ZONE }}/clusters/${{ secrets.GKE_CLUSTER_NAME }}
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
-        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-        TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+######DOES NOT WORK#######
+    # # Import Existing GKE Cluster
+    # - name: Import Existing GKE Cluster
+    #   run: terraform -chdir=infra import google_container_cluster.primary projects/${{ secrets.GCP_PROJECT_ID }}/locations/${{ secrets.GKE_CLUSTER_ZONE }}/clusters/${{ secrets.GKE_CLUSTER_NAME }}
+    #   env:
+    #     GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+    #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+    #     TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+
+
 
     # Terraform Apply
     - name: Terraform Apply
-      run: terraform apply -auto-approve 
+      run: terraform -chdir=infra apply -auto-approve 
       env:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
-    # Configure kubectl to use GKE cluster credentials
-    - name: Authenticate with GKE
+    # Deploy Cloud Function after infra provisioning
+    - name: Deploy Cloud Function
       run: |
-        gcloud auth activate-service-account --key-file=sa-key.json
-        gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }}
-
-    # Apply Kubernetes manifests (Deployment and Service)
-    - name: Apply Kubernetes manifests
-      run: |
-        kubectl apply -f k8s/deployment.yaml
-        kubectl apply -f k8s/service.yaml
+        gcloud functions deploy mongo_backup_function \
+          --runtime python39 \
+          --trigger-http \
+          --source=./infra/scheduler-func \
+          --entry-point=backup_mongo \
+          --set-env-vars=MONGODB_URI=${{ secrets.MONGODB_URI }}
 
     # Clean up the JSON file after use for security
     - name: Clean up

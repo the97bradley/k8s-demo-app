@@ -1,10 +1,12 @@
+# variables.tf
+
 variable "project_id" {
-  description = "Google Cloud Project ID"
+  description = "GCP project ID"
   type        = string
 }
 
-
 variable "gcp_credentials" {
-  description = "GCP auth credentials"
+  description = "GCP auth creds"
   type        = string
-} 
+}
+
