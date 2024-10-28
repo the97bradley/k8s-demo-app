@@ -20,15 +20,12 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-
-
     # Terraform Init and Apply (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform init
 
-      - name: Import Existing GKE Cluster
-  run: |
-    terraform import google_container_cluster.primary projects/${{ secrets.GCP_PROJECT_ID }}/locations/${{ secrets.GKE_CLUSTER_ZONE }}/clusters/${{ secrets.GKE_CLUSTER_NAME }}
+    - name: Import Existing GKE Cluster
+      run: terraform import google_container_cluster.primary projects/${{ secrets.GCP_PROJECT_ID }}/locations/${{ secrets.GKE_CLUSTER_ZONE }}/clusters/${{ secrets.GKE_CLUSTER_NAME }}
 
     - name: Terraform Apply
       run: terraform apply -auto-approve 
