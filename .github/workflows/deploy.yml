@@ -13,6 +13,10 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
+      # Create the Service Account Key File
+    - name: Create sa-key.json for Authentication
+      run: echo "${{ secrets.GCP_SA_KEY }}" > sa-key.json
+
     # Set up Google Cloud SDK
     - name: Set up Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
@@ -20,36 +24,47 @@ jobs:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCP_SA_KEY }}
 
-
-    #   # Terraform refresh
-    # - name: Terraform refresh
-    #   run: terraform refresh
-
-    # Terraform Init and Apply (Provision GKE and Infrastructure)
+    # Terraform Init (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform init
-
-    - name: Terraform Apply
-      run: terraform apply -auto-approve -refresh-only
       env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
+
+    # Import Existing GKE Cluster
+    - name: Import Existing GKE Cluster
+      run: terraform import google_container_cluster.primary projects/${{ secrets.GCP_PROJECT_ID }}/locations/${{ secrets.GKE_CLUSTER_ZONE }}/clusters/${{ secrets.GKE_CLUSTER_NAME }}
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
 
 
-    # Write Service Account Key to a JSON File and Authenticate
-    - name: Authenticate Service Account
+    # Terraform Apply
+    - name: Terraform Apply
+      run: terraform apply -auto-approve 
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        TF_VAR_gcp_credentials: ${{ secrets.GCP_SA_KEY }}
+
+
+   # Configure kubectl to use GKE cluster credentials
+    - name: Authenticate with GKE
       run: |
-        printf "%s" "${{ secrets.GCP_SA_KEY }}" > sa-key.json
+        echo "${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}" > sa-key.json
         gcloud auth activate-service-account --key-file=sa-key.json
         gcloud config set project ${{ secrets.GCP_PROJECT_ID }}
-
-    # Configure kubectl to use GKE cluster credentials
-    - name: Authenticate kubectl with GKE
-      run: |
-        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }} --project ${{ secrets.GCP_PROJECT_ID }}
+        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} --zone ${{ secrets.GKE_CLUSTER_ZONE }}
 
     # Apply Kubernetes manifests (Deployment and Service)
     - name: Apply Kubernetes manifests
       run: |
         kubectl apply -f k8s/deployment.yaml
         kubectl apply -f k8s/service.yaml
+
+
+      # Clean up the JSON file after use for security
+    - name: Clean up
+      run: rm sa-key.json

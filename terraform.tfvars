@@ -1,1 +1,0 @@
-project_id = "k8s-proj-439420"
