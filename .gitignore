@@ -1,0 +1,2 @@
+# Ignore Google Cloud service account key
+ci-key.json
