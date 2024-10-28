@@ -2,7 +2,11 @@ provider "google" {
   project     = var.project_id
   region      = "us-central1"
   credentials = var.gcp_credentials
+
+
 }
+
+
 
 resource "google_container_cluster" "primary" {
   name     = "host-cluster"
