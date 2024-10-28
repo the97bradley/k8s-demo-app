@@ -1,0 +1,10 @@
+name: Application deploy
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - "app/**"  # Only trigger if files in the infra directory are changed
+      - ".github/workflows/app-deploy.yml"  # Trigger on changes to this workflow file
+

@@ -57,15 +57,13 @@ jobs:
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
-    # Deploy Cloud Function after infra provisioning
-    - name: Deploy Cloud Function
+
+    - name: Retrieve MongoDB IP
+      id: get_mongo_ip
       run: |
-        gcloud functions deploy mongo_backup_function \
-          --runtime python39 \
-          --trigger-http \
-          --source=./infra/scheduler-func \
-          --entry-point=backup_mongo \
-          --set-env-vars=MONGODB_URI=${{ secrets.MONGODB_URI }}
+        MONGO_IP=$(terraform -chdir=infra output -raw mongo_ip)
+        echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
+
 
     # Clean up the JSON file after use for security
     - name: Clean up

@@ -44,6 +44,30 @@ resource "google_compute_instance" "mongo_instance" {
 }
 
 
+# Output MongoDB instance IP for dynamic URI construction
+output "mongo_ip" {
+  value = google_compute_instance.mongo_instance.network_interface[0].access_config[0].nat_ip
+}
+
+# Reference the manually created GCS bucket
+data "google_storage_bucket" "backup_function_code" {
+  name = "backup-function-code"  
+  }
+
+
+resource "google_cloudfunctions_function" "mongo_backup_function" {
+  name        = "mongo_backup_function"
+  runtime     = "python39"
+  entry_point = "backup_mongo"
+  source_archive_bucket =  data.google_storage_bucket.backup_function_code.name
+  source_archive_object = "scheduler-func.zip"
+  environment_variables = {
+    MONGODB_URI = "mongodb://${google_compute_instance.mongo_instance.network_interface[0].access_config[0].nat_ip}:27017"
+    GCS_BUCKET_NAME = google_storage_bucket.mongo_backups_bucket.name
+  }
+}
+
+
 # Cloud Scheduler Job to Trigger Cloud Function
 resource "google_cloud_scheduler_job" "mongo_backup_scheduler" {
   name        = "mongo_backup_scheduler"
@@ -65,6 +89,13 @@ resource "google_compute_global_address" "tasky_lb_ip" {
   name = "tasky-lb-ip"
 }
 
+# Define Instance Group for Backend
+resource "google_compute_instance_group" "tasky_instance_group" {
+  name = "tasky-instance-group"
+  zone = "us-central1-a"
+  instances = [google_compute_instance.mongo_instance.self_link]
+}
+
 resource "google_compute_backend_service" "tasky_backend" {
   name        = "tasky-backend"
   protocol    = "HTTP"
@@ -76,26 +107,25 @@ resource "google_compute_backend_service" "tasky_backend" {
   }
 }
 
-# Define GCP URL Map without any direct dependency on the Forwarding Rule
+# Define URL Map for the Backend Service
 resource "google_compute_url_map" "tasky_url_map" {
   name           = "tasky-url-map"
-  default_service = google_compute_backend_service.tasky_backend.self_link  # Replace with a backend service
+  default_service = google_compute_backend_service.tasky_backend.self_link
 }
 
-# Define Target HTTP Proxy referencing the URL Map only
+# Define Target HTTP Proxy referencing the URL Map
 resource "google_compute_target_http_proxy" "tasky_proxy" {
   name    = "tasky-proxy"
   url_map = google_compute_url_map.tasky_url_map.id
 }
 
-# Define Global Forwarding Rule referencing only the Proxy and Global Address
+# Define Global Forwarding Rule with Target Proxy and Global Address
 resource "google_compute_global_forwarding_rule" "tasky_forwarding_rule" {
   name       = "tasky-forwarding-rule"
   target     = google_compute_target_http_proxy.tasky_proxy.self_link
   port_range = "80"
   ip_address = google_compute_global_address.tasky_lb_ip.address
 }
-
 
 # Kubernetes Cluster
 resource "google_container_cluster" "primary" {
