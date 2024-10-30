@@ -50,7 +50,7 @@ jobs:
 
 
     # Terraform Apply
-    - name: Terraform Apply
+    - name: Terraform Apply 
       run: terraform -chdir=infra apply -auto-approve 
       env:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json

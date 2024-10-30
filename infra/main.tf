@@ -25,7 +25,7 @@ resource "google_compute_instance" "mongo_instance" {
 
   boot_disk {
     initialize_params {
-      image = "ubuntu-os-cloud/ubuntu-1604-xenial-v20210720"
+      image = "ubuntu-os-cloud/ubuntu-1604-xenial-v20200807"
     }
   }
 
