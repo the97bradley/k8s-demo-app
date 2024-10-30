@@ -1,8 +1,20 @@
+
+
+
 provider "google" {
   project     = var.project_id
   region      = "us-central1"
   credentials = var.gcp_credentials
 }
+
+terraform {
+  backend "gcs" {
+    bucket = "k8s-proj-state-file"
+  }
+}
+
+
+
 
 # Define GCS bucket for MongoDB backups
 resource "google_storage_bucket" "mongo_backups_bucket" {

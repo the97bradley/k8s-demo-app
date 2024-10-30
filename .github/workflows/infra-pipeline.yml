@@ -30,11 +30,13 @@ jobs:
 
     # Terraform Init (Provision GKE and Infrastructure)
     - name: Terraform Init
-      run: terraform -chdir=infra init
+      run: terraform -chdir=infra init 
       env:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+
 
 
 ######DOES NOT WORK#######
@@ -51,7 +53,8 @@ jobs:
 
     # Terraform Apply
     - name: Terraform Apply 
-      run: terraform -chdir=infra apply -auto-approve 
+      run: terraform -chdir=infra init #-backend-config="bucket=${{ matrix.target_environment.k8s-proj-state-file }}" -backend-config="location=US" -backend-config="impersonate_service_account=ci-cd-pipeline@k8s-proj-439420.iam.gserviceaccount.com"
+
       env:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
