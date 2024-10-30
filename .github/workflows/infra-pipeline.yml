@@ -26,7 +26,11 @@ jobs:
 
     # Create sa-key.json for Authentication (using CI_CD_PIPELINE_SERVICE_KEY)
     - name: Create sa-key.json for Authentication
-      run: echo "${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}" > sa-key.json
+      run:  echo "${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}" | base64 --decode > infra/sa-key.json
+
+
+    - name: TEsting 
+      run: cat infra/sa-key.json
 
     # Terraform Init (Provision GKE and Infrastructure)
     - name: Terraform Init
