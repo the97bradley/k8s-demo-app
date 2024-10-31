@@ -25,12 +25,13 @@ jobs:
         service_account_key: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
     # Create sa-key.json for Authentication (using CI_CD_PIPELINE_SERVICE_KEY)
-    - name: Create sa-key.json for Authentication
-      run:  echo "${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}" | base64 --decode > infra/sa-key.json
-
-
-    - name: TEsting 
-      run: cat infra/sa-key.json
+    - name: create-json
+      id: create-json
+      uses: jsdaniell/create-json@v1.2.3
+      with:
+        name: "infra/sa-key.json"
+        json: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+   
 
     # Terraform Init (Provision GKE and Infrastructure)
     - name: Terraform Init
@@ -41,18 +42,9 @@ jobs:
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
-
-
-######DOES NOT WORK#######
-    # # Import Existing GKE Cluster
-    # - name: Import Existing GKE Cluster
-    #   run: terraform -chdir=infra import google_container_cluster.primary projects/${{ secrets.GCP_PROJECT_ID }}/locations/${{ secrets.GKE_CLUSTER_ZONE }}/clusters/${{ secrets.GKE_CLUSTER_NAME }}
-    #   env:
-    #     GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
-    #     TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-    #     TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
-
-
+    # # Terraform refresh
+    # - name: Terraform refresh
+    #   run: terraform refresh
 
 
     # Terraform Apply
@@ -66,12 +58,12 @@ jobs:
 
 
     - name: Retrieve MongoDB IP
-      id: get_mongo_ip
       run: |
-        MONGO_IP=$(terraform -chdir=infra output -raw mongo_ip)
-        echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
+         MONGO_IP=$(gcloud compute instances describe mongo-instance \
+          --zone=us-central1-a \
+          --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
+          echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
 
-
-    # Clean up the JSON file after use for security
-    - name: Clean up
-      run: rm sa-key.json
+   
