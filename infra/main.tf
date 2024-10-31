@@ -18,15 +18,23 @@ terraform {
 
 # Define GCS bucket for MongoDB backups
 resource "google_storage_bucket" "mongo_backups_bucket" {
-  name                       = "mongo-backups-bucket"
+  name                       = "mongo-backups-bucket-k8s-proj"
   location                   = "US"
   uniform_bucket_level_access = true
+
+
+  lifecycle {
+    prevent_destroy = true
+  }
+
 }
 
 resource "google_storage_bucket_iam_member" "public_access" {
   bucket = google_storage_bucket.mongo_backups_bucket.name
   role   = "roles/storage.objectViewer"
   member = "allUsers"
+
+
 }
 
 # MongoDB VM Instance
@@ -44,6 +52,11 @@ resource "google_compute_instance" "mongo_instance" {
   network_interface {
     network = "default"
     access_config {}
+  }
+
+
+  lifecycle {
+    prevent_destroy = true
   }
 
   metadata_startup_script = <<-EOF
@@ -73,6 +86,11 @@ resource "google_cloudfunctions_function" "mongo_backup_function" {
   trigger_http = true
   source_archive_bucket =  data.google_storage_bucket.backup_function_code.name
   source_archive_object = "scheduler-func.zip"
+
+
+  lifecycle {
+    prevent_destroy = true
+  }
 
 }
 
