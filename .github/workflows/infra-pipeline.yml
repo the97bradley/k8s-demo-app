@@ -50,7 +50,6 @@ jobs:
     # Terraform Apply
     - name: Terraform Apply 
       run: terraform -chdir=infra init #-backend-config="bucket=${{ matrix.target_environment.k8s-proj-state-file }}" -backend-config="location=US" -backend-config="impersonate_service_account=ci-cd-pipeline@k8s-proj-439420.iam.gserviceaccount.com"
-
       env:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
@@ -64,6 +63,6 @@ jobs:
           --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
           echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
       env:
-        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+        GOOGLE_APPLICATION_CREDENTIALS: infra/sa-key.json
 
    
