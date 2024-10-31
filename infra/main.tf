@@ -66,17 +66,14 @@ data "google_storage_bucket" "backup_function_code" {
   name = "backup-function-code"  
   }
 
-
 resource "google_cloudfunctions_function" "mongo_backup_function" {
   name        = "mongo_backup_function"
   runtime     = "python39"
   entry_point = "backup_mongo"
+  trigger_http = true
   source_archive_bucket =  data.google_storage_bucket.backup_function_code.name
   source_archive_object = "scheduler-func.zip"
-  environment_variables = {
-    MONGODB_URI = "mongodb://${google_compute_instance.mongo_instance.network_interface[0].access_config[0].nat_ip}:27017"
-    GCS_BUCKET_NAME = google_storage_bucket.mongo_backups_bucket.name
-  }
+
 }
 
 

@@ -42,6 +42,21 @@ jobs:
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
+
+    - name: Import Global Address
+      run: terraform -chdir=infra import google_compute_global_address.tasky_lb_ip projects/k8s-proj-439420/global/addresses/tasky-lb-ip
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+        TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+    # Continue with apply or other steps
+    - name: Apply Terraform Changes
+      run: terraform -chdir=infra apply -auto-approve
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+
+
     # # Terraform refresh
     # - name: Terraform refresh
     #   run: terraform refresh
@@ -49,20 +64,13 @@ jobs:
 
     # Terraform Apply
     - name: Terraform Apply 
-      run: terraform -chdir=infra init #-backend-config="bucket=${{ matrix.target_environment.k8s-proj-state-file }}" -backend-config="location=US" -backend-config="impersonate_service_account=ci-cd-pipeline@k8s-proj-439420.iam.gserviceaccount.com"
+      run: terraform -chdir=infra apply -auto-approve #-backend-config="bucket=${{ matrix.target_environment.k8s-proj-state-file }}" -backend-config="location=US" -backend-config="impersonate_service_account=ci-cd-pipeline@k8s-proj-439420.iam.gserviceaccount.com"
       env:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
-    - name: Retrieve MongoDB IP
-      run: |
-         MONGO_IP=$(gcloud compute instances describe mongo-instance \
-          --zone=us-central1-a \
-          --format='get(networkInterfaces[0].accessConfigs[0].natIP)')
-          echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: infra/sa-key.json
+
 
    
