@@ -16,27 +16,6 @@ terraform {
 
 
 
-# Define GCS bucket for MongoDB backups
-resource "google_storage_bucket" "mongo_backups_bucket" {
-  name                       = "mongo-backups-bucket-k8s-proj"
-  location                   = "US"
-  uniform_bucket_level_access = true
-
-
-  lifecycle {
-    prevent_destroy = true
-  }
-
-}
-
-resource "google_storage_bucket_iam_member" "public_access" {
-  bucket = google_storage_bucket.mongo_backups_bucket.name
-  role   = "roles/storage.objectViewer"
-  member = "allUsers"
-
-
-}
-
 # MongoDB VM Instance
 resource "google_compute_instance" "mongo_instance" {
   name         = "mongo-instance"
@@ -74,18 +53,14 @@ output "mongo_ip" {
   value = google_compute_instance.mongo_instance.network_interface[0].access_config[0].nat_ip
 }
 
-# Reference the manually created GCS bucket
-data "google_storage_bucket" "backup_function_code" {
-  name = "backup-function-code"  
-  }
 
 resource "google_cloudfunctions_function" "mongo_backup_function" {
   name        = "mongo_backup_function"
   runtime     = "python39"
   entry_point = "backup_mongo"
   trigger_http = true
-  source_archive_bucket =  data.google_storage_bucket.backup_function_code.name
-  source_archive_object = "scheduler-func.zip"
+  source_archive_bucket =  "backup-function-code"
+  source_archive_object = "backup-func.zip"
 
 
   lifecycle {
@@ -123,6 +98,18 @@ resource "google_compute_instance_group" "tasky_instance_group" {
   instances = [google_compute_instance.mongo_instance.self_link]
 }
 
+# Define HTTP Health Check
+resource "google_compute_http_health_check" "tasky_health_check" {
+  name               = "tasky-health-check"
+  request_path       = "/"
+  port               = 80
+  check_interval_sec = 5
+  timeout_sec        = 5
+  healthy_threshold  = 2
+  unhealthy_threshold = 2
+}
+
+# Define Backend Service with Health Check
 resource "google_compute_backend_service" "tasky_backend" {
   name        = "tasky-backend"
   protocol    = "HTTP"
@@ -132,7 +119,10 @@ resource "google_compute_backend_service" "tasky_backend" {
   backend {
     group = google_compute_instance_group.tasky_instance_group.self_link
   }
+
+  health_checks = [google_compute_http_health_check.tasky_health_check.self_link]
 }
+
 
 # Define URL Map for the Backend Service
 resource "google_compute_url_map" "tasky_url_map" {
