@@ -23,11 +23,6 @@ resource "google_cloudfunctions_function" "mongo_backup_function" {
   source_archive_bucket =  "backup-function-code"
   source_archive_object =  "backup-func.zip"
 
-
-  environment_variables = {
-    GOOGLE_FUNCTION_SOURCE = "backup-func/main.py" 
-  }
-
   lifecycle {
     prevent_destroy = true
   }
