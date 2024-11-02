@@ -33,7 +33,6 @@ jobs:
         json: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
    
 
-    # Terraform Init (Provision GKE and Infrastructure)
     - name: Terraform Init
       run: terraform -chdir=infra init 
       env:
@@ -41,11 +40,6 @@ jobs:
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
-
-
-    #  # Terraform refresh
-    # - name: Terraform refresh
-    #   run: terraform refresh
 
 
     # Terraform Apply
@@ -59,4 +53,9 @@ jobs:
 
 
 
-   
+    # Retrieve MongoDB IP after infra deployment
+    - name: Retrieve MongoDB IP
+      id: get_mongo_ip
+      run: MONGO_IP=$(terraform -chdir=infra output -raw mongo_ip) echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json

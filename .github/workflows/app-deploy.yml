@@ -16,3 +16,11 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v2
+
+
+    - name: Deploy Application to GKE
+      run: |
+        kubectl apply -f app/deployment.yaml
+        kubectl apply -f app/service.yaml
+      env:
+        MONGODB_URI: ${{ env.MONGODB_URI }}

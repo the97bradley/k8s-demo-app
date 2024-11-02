@@ -29,9 +29,6 @@ resource "google_cloudfunctions_function" "mongo_backup_function" {
 }
 
 
-
-
-
 # MongoDB VM Instance
 resource "google_compute_instance" "mongo_instance" {
   name         = "mongo-instance"
@@ -50,17 +47,23 @@ resource "google_compute_instance" "mongo_instance" {
   }
 
 
-  lifecycle {
-    prevent_destroy = true
-  }
-
-  metadata_startup_script = <<-EOF
-    #!/bin/bash
-    sudo apt-get update
-    sudo apt-get install -y mongodb-org
-    sudo systemctl enable mongod
-    sudo systemctl start mongod
-  EOF
+metadata_startup_script = <<-EOF
+  #!/bin/bash
+  sudo apt-get update
+  
+  # Add MongoDB repository and install
+  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
+  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -sc)/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+  sudo apt-get update
+  sudo apt-get install -y mongodb-org
+  
+  # Start MongoDB
+  sudo systemctl start mongod
+  
+  # Enable MongoDB to start on boot
+  sudo systemctl enable mongod.service
+  echo "abc"
+EOF
 }
 
 
