@@ -45,6 +45,19 @@ jobs:
           gcloud components install gke-gcloud-auth-plugin -q
 
 
+    # Build the Docker image
+      - name: Build Docker Image
+        run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest ./tasky
+
+
+      # Authenticate Docker with GCR
+      - name: Authenticate Docker to GCR
+        run: gcloud auth configure-docker
+
+        # Push Docker Image to GCR
+      - name: Push Docker Image
+        run: docker push gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest
+
     # Configure kubectl with the correct cluster credentials
       - name: Configure kubectl
         run: |
