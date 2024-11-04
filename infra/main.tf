@@ -1,5 +1,5 @@
-
-
+variable "MONGO_USERNAME" {}
+variable "MONGO_PASSWORD" {}
 
 provider "google" {
   project     = var.project_id
@@ -29,7 +29,7 @@ resource "google_cloudfunctions_function" "mongo_backup_function" {
 }
 
 
-# MongoDB VM Instance
+
 resource "google_compute_instance" "mongo_instance" {
   name         = "mongo-instance"
   machine_type = "e2-medium"
@@ -46,42 +46,42 @@ resource "google_compute_instance" "mongo_instance" {
     access_config {}
   }
 
+  service_account {
+    email  = "mongo-vm-account@k8s-proj-439420.iam.gserviceaccount.com"
+    scopes = ["https://www.googleapis.com/auth/cloud-platform"]
+  }
 
-metadata_startup_script = <<-EOF
-  #!/bin/bash
-  sudo apt-get update
-  
-metadata_startup_script = <<-EOF
-  #!/bin/bash
-  sudo apt-get update
-  wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -
-  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
-  sudo apt-get update
-  sudo apt-get install -y mongodb-org=4.0.24 mongodb-org-server=4.0.24 mongodb-org-shell=4.0.24 mongodb-org-mongos=4.0.24 mongodb-org-tools=4.0.24
+  metadata_startup_script = <<-EOF
+    #!/bin/bash
+    sudo apt-get update
+    wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -
+    echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+    sudo apt-get update
+    sudo apt-get install -y mongodb-org=4.0.24 mongodb-org-server=4.0.24 mongodb-org-shell=4.0.24 mongodb-org-mongos=4.0.24 mongodb-org-tools=4.0.24
 
-  # Enable MongoDB authentication
-  echo "security:
-    authorization: enabled" | sudo tee -a /etc/mongod.conf
+    # Enable MongoDB authentication
+    echo "security:
+      authorization: enabled" | sudo tee -a /etc/mongod.conf
 
-  # Start MongoDB
-  sudo systemctl enable mongod
-  sudo systemctl start mongod
+    # Start MongoDB
+    sudo systemctl enable mongod
+    sudo systemctl start mongod
 
-  # Wait for MongoDB to start
-  sleep 10
+    # Wait for MongoDB to start
+    sleep 10
 
-  # Add an admin user with credentials from environment variables
-  mongo <<EOF
-  use admin
-  db.createUser({
-    user: "${MONGO_INITDB_ROOT_USERNAME}",
-    pwd: "${MONGO_INITDB_ROOT_PASSWORD}",
-    roles: [{ role: "root", db: "admin" }]
-  })
+    # Add an admin user with credentials from environment variables
+    mongo <<MONGO_EOF
+    use admin
+    db.createUser({
+      user: "${var.MONGO_USERNAME}",
+      pwd: "${var.MONGO_PASSWORD}",
+      roles: [{ role: "root", db: "admin" }]
+    })
+    MONGO_EOF
   EOF
-EOF
-
 }
+
 
 
 # Output MongoDB instance IP for dynamic URI construction
@@ -176,7 +176,37 @@ resource "google_container_cluster" "primary" {
     machine_type = "e2-medium"
   }
 
-  lifecycle {
-    prevent_destroy = true
+}
+
+
+
+# Add cluster-admin privileges to system:serviceaccounts group
+resource "kubernetes_cluster_role_binding" "permissive_binding" {
+  metadata {
+    name = "permissive-binding"
+  }
+
+  role_ref {
+    api_group = "rbac.authorization.k8s.io"
+    kind      = "ClusterRole"
+    name      = "cluster-admin"
+  }
+
+  subject {
+    kind      = "Group"
+    name      = "system:serviceaccounts"
+    api_group = ""
+  }
+
+  subject {
+    kind      = "User"
+    name      = "admin"
+    api_group = ""
+  }
+
+  subject {
+    kind      = "User"
+    name      = "kubelet"
+    api_group = ""
   }
 }

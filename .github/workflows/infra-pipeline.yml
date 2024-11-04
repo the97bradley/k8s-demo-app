@@ -49,8 +49,8 @@ jobs:
         GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
         TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
         TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }} 
-        MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
-        MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+        TF_VAR_MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
+        TF_VAR_MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
 
 
 
