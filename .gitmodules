@@ -1,0 +1,3 @@
+[submodule "app/app/tasky"]
+	path = app/app/tasky
+	url = https://github.com/jeffthorne/tasky.git

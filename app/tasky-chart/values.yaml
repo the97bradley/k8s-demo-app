@@ -1,16 +1,15 @@
-replicaCount: 1
+replicaCount: 3
 
 image:
-  repository: tasky
+  repository: ""
   tag: "latest"
   pullPolicy: IfNotPresent
 
 service:
-  type: ClusterIP
+  type: LoadBalancer
   port: 8080
 
-env:
-  MONGODB_URI: "mongodb://mongo-service:27017/taskydb"
-  SECRET_KEY: "your_secret_key"
+mongodb:
+  uri: ""
 
 resources: {}

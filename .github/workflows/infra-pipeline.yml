@@ -77,7 +77,6 @@ jobs:
             echo "Cluster role binding 'permissive-binding' already exists, skipping creation.";
           fi
 
-      # Retrieve MongoDB IP after infra deployment
       - name: Retrieve MongoDB IP
         id: get_mongo_ip
         run: |
@@ -85,3 +84,11 @@ jobs:
           echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
         env:
           GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+
+      - name: Save MongoDB IP to GitHub Secret
+        if: success()
+        run: |
+          curl -X PUT -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
+          -H "Accept: application/vnd.github.v3+json" \
+          https://api.github.com/repos/${{ github.repository }}/actions/secrets/MONGO_IP \
+          -d '{"encrypted_value":"'"$MONGO_IP"'"}'

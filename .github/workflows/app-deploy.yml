@@ -1,13 +1,12 @@
-name: Application deploy
+name: Application Deploy
 
 on:
   push:
     branches:
       - main
     paths:
-      - "app/**"  # Only trigger if files in the infra directory are changed
-      - ".github/workflows/app-deploy.yml"  # Trigger on changes to this workflow file
-
+      - "app/**"  # Trigger on changes to the app directory
+      - ".github/workflows/app-deploy.yml"
 
 jobs:
   deploy:
@@ -17,34 +16,18 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v2
 
-
-
-# Set up Google Cloud SDK with the `ci-cd-pipeline` service account
+    # Set up Google Cloud SDK
     - name: Set up Google Cloud SDK
       uses: google-github-actions/setup-gcloud@v1
       with:
         project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
-
-
-
-# Authenticate kubectl with GKE cluster
-    - name: Configure kubectl with GKE
-      run: |
-        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} \
-          --zone ${{ secrets.GKE_CLUSTER_ZONE }} \
-          --project ${{ secrets.GCP_PROJECT_ID }}
-
-
-
-  # Deploy your application using Helm
     - name: Deploy Application with Helm
       run: |
         helm upgrade --install tasky ./app/tasky-chart \
           --namespace default \
           --set image.repository=gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image \
           --set image.tag=${{ github.sha }} \
-          --set mongodb.uri=mongodb://${{ steps.get_mongo_ip.outputs.mongo_ip }}:27017 \
+          --set mongodb.uri=mongodb://${{ secrets.MONGO_IP }}:27017 \
           --wait
