@@ -107,7 +107,7 @@ resource "google_cloud_scheduler_job" "mongo_backup_scheduler" {
   }
 }
 
-# Load Balancer Setup for Tasky Application
+# Load Balancer Setup for Tasky Application 
 resource "google_compute_global_address" "tasky_lb_ip" {
   name = "tasky-lb-ip"
 }
@@ -123,7 +123,7 @@ resource "google_compute_instance_group" "tasky_instance_group" {
 resource "google_compute_http_health_check" "tasky_health_check" {
   name               = "tasky-health-check"
   request_path       = "/"
-  port               = 80
+  port               = 32080
   check_interval_sec = 5
   timeout_sec        = 5
   healthy_threshold  = 2
@@ -169,8 +169,15 @@ resource "google_compute_global_forwarding_rule" "tasky_forwarding_rule" {
 resource "google_container_cluster" "primary" {
   name     = "host-cluster"
   location = "us-central1-a"
+  deletion_protection = "false"
+
+
+
 
   initial_node_count = 3
+
+
+
 
   node_config {
     machine_type = "e2-medium"

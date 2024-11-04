@@ -1,5 +1,4 @@
-name: Deploy Project with IaC
-
+name: Infra Pipeline
 on:
   push:
     branches:
@@ -47,6 +46,17 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
           TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
           TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+
+      - name: Terraform Init
+        run: terraform -chdir=infra init
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+
+
 
       # Terraform Apply
       - name: Terraform Apply

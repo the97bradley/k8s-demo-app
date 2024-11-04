@@ -33,9 +33,19 @@ jobs:
         id: get-mongo-uri
         run: |
           MONGO_URI=$(gcloud secrets versions access latest --secret=MONGO_URI)
-          echo "MONGO_URI=$MONGO_URI" >> $GITHUB_ENV
+          echo "MONGODB_URI=$MONGO_URI" >> $GITHUB_ENV
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+
+      # - name: Retrieve Load Balancer DNS
+      #   id: get_lb_dns
+      #   run: |
+      #     LB_DNS=$(gcloud compute addresses describe tasky-lb-ip --global --format='get(address)')
+      #     echo "LB_DNS=$LB_DNS" >> $GITHUB_ENV
+      #     echo "::set-output name=lb_dns::$LB_DNS"
+      #   env:
+      #     GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
 
@@ -47,7 +57,7 @@ jobs:
 
     # Build the Docker image
       - name: Build Docker Image
-        run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest ./tasky
+        run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest ./app/tasky
 
 
       # Authenticate Docker with GCR
@@ -66,22 +76,12 @@ jobs:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
-      - name: Retrieve Load Balancer DNS
-        id: get_lb_dns
-        run: |
-          LB_DNS=$(gcloud compute addresses describe tasky-lb-ip --global --format='get(address)')
-          echo "LB_DNS=$LB_DNS" >> $GITHUB_ENV
-          echo "::set-output name=lb_dns::$LB_DNS"
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
       - name: Deploy Application with Helm
         run: |
           helm upgrade --install tasky ./app/tasky-chart \
-            --namespace default \
-            --set image.repository=gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image \
-            --set image.tag=${{ github.sha }} \
-            --set mongodb.uri=mongodb://${{ secrets.MONGO_IP }}:27017 \
-            --set ingress.hosts[0].host=${{ steps.get_lb_ip.outputs.lb_dns }} \
-            --wait
+          --namespace default \
+          --set mongodb.uri=${{ env.MONGODB_URI }} \
+          --wait \
+          --debug

@@ -1,12 +1,13 @@
+
 replicaCount: 3
 
 image:
-  repository: ""
+  repository: "gcr.io/k8s-proj-439420/tasky-image"
   tag: "latest"
   pullPolicy: IfNotPresent
 
 service:
-  type: LoadBalancer
+  type: NodePort
   port: 8080
 
 serviceAccount:
@@ -15,14 +16,9 @@ serviceAccount:
 
 mongodb:
   uri: ""
-
+  
 ingress:
-  enabled: true
-  hosts:
-    - host: "<dynamically set IP here>"
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
+  enabled: false
 
 autoscaling:
   enabled: false
