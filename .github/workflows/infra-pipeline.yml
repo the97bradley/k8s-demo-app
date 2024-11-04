@@ -58,6 +58,27 @@ jobs:
           TF_VAR_MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
           TF_VAR_MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
 
+      # Retrieve MongoDB IP and construct URI
+      - name: Retrieve MongoDB IP and store URI in Secret Manager
+        run: |
+          # Get MongoDB IP from Terraform output
+          MONGO_IP=$(terraform -chdir=infra output -raw mongo_ip)
+
+          # Construct MongoDB URI
+          MONGO_URI="mongodb://$MONGO_IP:27017"
+
+          # Create secret if it doesn't exist, else update it
+          if gcloud secrets describe MONGO_URI >/dev/null 2>&1; then
+            echo "Updating existing MONGO_URI secret..."
+            echo -n "$MONGO_URI" | gcloud secrets versions add MONGO_URI --data-file=-
+          else
+            echo "Creating new MONGO_URI secret..."
+            gcloud secrets create MONGO_URI --replication-policy="automatic"
+            echo -n "$MONGO_URI" | gcloud secrets versions add MONGO_URI --data-file=-
+          fi
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+
       # Set up kubectl and apply the cluster role binding
       - name: Configure kubectl
         run: |
@@ -76,19 +97,3 @@ jobs:
           else
             echo "Cluster role binding 'permissive-binding' already exists, skipping creation.";
           fi
-
-      - name: Retrieve MongoDB IP
-        id: get_mongo_ip
-        run: |
-          MONGO_IP=$(terraform -chdir=infra output -raw mongo_ip)
-          echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
-        env:
-          GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
-
-      - name: Save MongoDB IP to GitHub Secret
-        if: success()
-        run: |
-          curl -X PUT -H "Authorization: token ${{ secrets.PAT_TOKEN }}" \
-          -H "Accept: application/vnd.github.v3+json" \
-          https://api.github.com/repos/${{ github.repository }}/actions/secrets/MONGO_IP \
-          -d '{"encrypted_value":"'"$MONGO_IP"'"}'

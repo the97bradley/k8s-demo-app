@@ -5,10 +5,10 @@ metadata:
   labels:
     {{- include "tasky-chart.labels" . | nindent 4 }}
 spec:
-  type: {{ .Values.service.type }}
+  type: {{ .Values.service.type }}  # Use the type specified in values.yaml
   ports:
-    - port: {{ .Values.service.port }}
-      targetPort: http
+    - port: {{ .Values.service.port }}  # Use the port specified in values.yaml
+      targetPort: http                   # Change to the appropriate target port if necessary
       protocol: TCP
       name: http
   selector:

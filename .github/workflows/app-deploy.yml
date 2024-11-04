@@ -1,33 +1,74 @@
-name: Application Deploy
+name: Deploy Application with Helm
 
 on:
   push:
     branches:
       - main
     paths:
-      - "app/**"  # Trigger on changes to the app directory
-      - ".github/workflows/app-deploy.yml"
+      - "app/**"  # Only trigger if files in the app directory are changed
+      - ".github/workflows/app-deploy.yml"  # Trigger on changes to this workflow file
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    # Set up Google Cloud SDK
-    - name: Set up Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
+      # Set up Google Cloud SDK
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+
+      # Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+      # Retrieve MongoDB URI from Secret Manager
+      - name: Retrieve MONGO_URI secret
+        id: get-mongo-uri
+        run: |
+          MONGO_URI=$(gcloud secrets versions access latest --secret=MONGO_URI)
+          echo "MONGO_URI=$MONGO_URI" >> $GITHUB_ENV
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
 
-    - name: Deploy Application with Helm
-      run: |
-        helm upgrade --install tasky ./app/tasky-chart \
-          --namespace default \
-          --set image.repository=gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image \
-          --set image.tag=${{ github.sha }} \
-          --set mongodb.uri=mongodb://${{ secrets.MONGO_IP }}:27017 \
-          --wait
+
+# Install gke-gcloud-auth-plugin
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin -q
+
+
+    # Configure kubectl with the correct cluster credentials
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials host-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+
+      - name: Retrieve Load Balancer IP
+        id: get_lb_ip
+        run: |
+          LB_IP=$(gcloud compute addresses describe tasky-lb-ip --global --format='get(address)')
+          echo "LB_IP=$LB_IP" >> $GITHUB_ENV
+          echo "::set-output name=lb_ip::$LB_IP"
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+    
+      - name: Deploy Application with Helm
+        run: |
+          helm upgrade --install tasky ./app/tasky-chart \
+            --namespace default \
+            --set image.repository=gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image \
+            --set image.tag=${{ github.sha }} \
+            --set mongodb.uri=mongodb://${{ secrets.MONGO_IP }}:27017 \
+            --set ingress.hosts[0].host=${{ steps.get_lb_ip.outputs.lb_ip }} \
+            --wait

@@ -1,0 +1,25 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: get-external-ip
+  annotations:
+    "helm.sh/hook": post-install  # This hook will run after the chart is installed
+spec:
+  template:
+    spec:
+      containers:
+      - name: get-ip
+        image: bitnami/kubectl
+        command: ["/bin/sh", "-c"]
+        args:
+          - |
+            while true; do
+              IP=$(kubectl get svc {{ .Release.Name }}-service -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+              if [ -n "$IP" ]; then
+                echo "LoadBalancer IP: $IP"
+                break
+              fi
+              echo "Waiting for LoadBalancer IP..."
+              sleep 5
+            done
+      restartPolicy: Never
