@@ -8,56 +8,80 @@ on:
       - "infra/**"  # Only trigger if files in the infra directory are changed
       - ".github/workflows/infra-pipeline.yml"  # Trigger on changes to this workflow file
 
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v2
+      - name: Checkout repository
+        uses: actions/checkout@v2
 
-    # Set up Google Cloud SDK with the `ci-cd-pipeline` service account
-    - name: Set up Google Cloud SDK
-      uses: google-github-actions/setup-gcloud@v1
-      with:
-        project_id: ${{ secrets.GCP_PROJECT_ID }}
-        service_account_key: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+      # Set up Google Cloud SDK with the `ci-cd-pipeline` service account
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
 
-    # Create sa-key.json for Authentication (using CI_CD_PIPELINE_SERVICE_KEY)
-    - name: create-json
-      id: create-json
-      uses: jsdaniell/create-json@v1.2.3
-      with:
-        name: "infra/sa-key.json"
-        json: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
-   
+      # Authenticate to Google Cloud
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v1
+        with:
+          credentials_json: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
-    - name: Terraform Init
-      run: terraform -chdir=infra init 
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
-        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-        TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+      # Install gke-gcloud-auth-plugin
+      - name: Install gke-gcloud-auth-plugin
+        run: |
+          gcloud components install gke-gcloud-auth-plugin -q
 
+      # Create sa-key.json for Authentication (using CI_CD_PIPELINE_SERVICE_KEY)
+      - name: Create sa-key.json
+        id: create-json
+        uses: jsdaniell/create-json@v1.2.3
+        with:
+          name: "infra/sa-key.json"
+          json: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
+      - name: Terraform Init
+        run: terraform -chdir=infra init
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
-    # Terraform Apply
-    - name: Terraform Apply 
-      run: terraform -chdir=infra apply -auto-approve #-backend-config="bucket=${{ matrix.target_environment.k8s-proj-state-file }}" -backend-config="location=US" -backend-config="impersonate_service_account=ci-cd-pipeline@k8s-proj-439420.iam.gserviceaccount.com"
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
-        TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
-        TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }} 
-        TF_VAR_MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
-        TF_VAR_MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
+      # Terraform Apply
+      - name: Terraform Apply
+        run: terraform -chdir=infra apply -auto-approve
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+          TF_VAR_project_id: ${{ secrets.GCP_PROJECT_ID }}
+          TF_VAR_gcp_credentials: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+          TF_VAR_MONGO_USERNAME: ${{ secrets.MONGO_USERNAME }}
+          TF_VAR_MONGO_PASSWORD: ${{ secrets.MONGO_PASSWORD }}
 
+      # Set up kubectl and apply the cluster role binding
+      - name: Configure kubectl
+        run: |
+          gcloud container clusters get-credentials host-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
+      - name: Create permissive role binding
+        run: |
+          if ! kubectl get clusterrolebinding permissive-binding &> /dev/null; then
+            kubectl create clusterrolebinding permissive-binding \
+              --clusterrole=cluster-admin \
+              --user=admin \
+              --user=kubelet \
+              --group=system:serviceaccounts;
+          else
+            echo "Cluster role binding 'permissive-binding' already exists, skipping creation.";
+          fi
 
-
-    # Retrieve MongoDB IP after infra deployment
-    - name: Retrieve MongoDB IP
-      id: get_mongo_ip
-      run: MONGO_IP=$(terraform -chdir=infra output -raw mongo_ip) echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
+      # Retrieve MongoDB IP after infra deployment
+      - name: Retrieve MongoDB IP
+        id: get_mongo_ip
+        run: |
+          MONGO_IP=$(terraform -chdir=infra output -raw mongo_ip)
+          echo "MONGODB_URI=mongodb://$MONGO_IP:27017" >> $GITHUB_ENV
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: sa-key.json
