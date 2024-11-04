@@ -18,9 +18,33 @@ jobs:
       uses: actions/checkout@v2
 
 
-    - name: Deploy Application to GKE
+
+# Set up Google Cloud SDK with the `ci-cd-pipeline` service account
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
+      with:
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
+        service_account_key: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
+
+
+
+
+
+# Authenticate kubectl with GKE cluster
+    - name: Configure kubectl with GKE
       run: |
-        kubectl apply -f app/deployment.yaml
-        kubectl apply -f app/service.yaml
-      env:
-        MONGODB_URI: ${{ env.MONGODB_URI }}
+        gcloud container clusters get-credentials ${{ secrets.GKE_CLUSTER_NAME }} \
+          --zone ${{ secrets.GKE_CLUSTER_ZONE }} \
+          --project ${{ secrets.GCP_PROJECT_ID }}
+
+
+
+  # Deploy your application using Helm
+    - name: Deploy Application with Helm
+      run: |
+        helm upgrade --install tasky ./app/tasky-chart \
+          --namespace default \
+          --set image.repository=gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image \
+          --set image.tag=${{ github.sha }} \
+          --set mongodb.uri=mongodb://${{ steps.get_mongo_ip.outputs.mongo_ip }}:27017 \
+          --wait

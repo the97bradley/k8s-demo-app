@@ -52,17 +52,15 @@ metadata_startup_script = <<-EOF
   sudo apt-get update
   
   # Add MongoDB repository and install
-  wget -qO - https://www.mongodb.org/static/pgp/server-4.4.asc | sudo apt-key add -
-  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -sc)/mongodb-org/4.4 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.4.list
+ metadata_startup_script = <<-EOF
+  #!/bin/bash
   sudo apt-get update
-  sudo apt-get install -y mongodb-org
-  
-  # Start MongoDB
+  wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -
+  echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
+  sudo apt-get update
+  sudo apt-get install -y mongodb-org=4.0.24 mongodb-org-server=4.0.24 mongodb-org-shell=4.0.24 mongodb-org-mongos=4.0.24 mongodb-org-tools=4.0.24
+  sudo systemctl enable mongod
   sudo systemctl start mongod
-  
-  # Enable MongoDB to start on boot
-  sudo systemctl enable mongod.service
-  echo "abc"
 EOF
 }
 
