@@ -43,6 +43,8 @@ spec:
           env:
             - name: MONGODB_URI
               value: {{ .Values.mongodb.uri }}
+            - name: SECRET_KEY
+              value: "123"
           livenessProbe:
             httpGet:
               path: /

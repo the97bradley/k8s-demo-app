@@ -54,11 +54,12 @@ resource "google_compute_instance" "mongo_instance" {
     wget -qO - https://www.mongodb.org/static/pgp/server-4.0.asc | sudo apt-key add -
     echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu $(lsb_release -cs)/mongodb-org/4.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-4.0.list
     sudo apt-get update
-    sudo apt-get install -y mongodb-org=4.0.24 mongodb-org-server=4.0.24 mongodb-org-shell=4.0.24 mongodb-org-mongos=4.0.24 mongodb-org-tools=4.0.24
+    sudo apt-get install -y mongodb-org=4.0.24 mongodb-org-server=4.0.24 mongodb-org-shell=4.0.24 mongodb-org-mongos=4.0.24 mongodb-org-tools=4.0.24 --allow-unauthenticated -y
+
 
     # Enable MongoDB authentication
     echo "security:
-      authorization: enabled" | sudo tee -a /etc/mongod.conf
+      authorization: disabled" | sudo tee -a /etc/mongod.conf
 
     # Start MongoDB
     sudo systemctl enable mongod
@@ -66,6 +67,7 @@ resource "google_compute_instance" "mongo_instance" {
 
     # Wait for MongoDB to start
     sleep 10
+    echo "hello"
 
     # Add an admin user with credentials from environment variables
     mongo <<MONGO_EOF
@@ -116,7 +118,7 @@ resource "google_container_cluster" "primary" {
 
 
 
-  initial_node_count = 3
+  initial_node_count = 4
 
 
 

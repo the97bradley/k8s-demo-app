@@ -3,27 +3,34 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: {{ include "tasky-chart.fullname" . }}
-  # annotations:
-  #   kubernetes.io/ingress.class: gce
+  annotations:
+    kubernetes.io/ingress.class: gce
 spec:
   rules:
     - host: bradleysproject.duckdns.org
       http:
         paths:
-          - path: /assets/css/*
+          - path: /assets/css/
             pathType: Prefix
             backend:
               service:
                 name: {{ include "tasky-chart.fullname" . }}
                 port:
                   number: 8080
-          - path: /assets/js/*
+          - path: /assets/js/
             pathType: Prefix
             backend:
               service:
                 name: {{ include "tasky-chart.fullname" . }}
                 port:
                   number: 8080
+          - path: /signup
+            pathType: ImplementationSpecific
+            backend:
+              service:
+                name: {{ include "tasky-chart.fullname" . }}
+                port:
+                  number: 8080                  
           - path: /
             pathType: ImplementationSpecific
             backend:
