@@ -21,7 +21,7 @@ resource "google_cloudfunctions_function" "mongo_backup_function" {
   entry_point = "backup_mongo"
   trigger_http = true
   source_archive_bucket =  "backup-function-code"
-  source_archive_object =  "backup-func.zip"
+  source_archive_object =  "backup.zip"
 
 }
 
@@ -55,6 +55,9 @@ resource "google_compute_instance" "mongo_instance" {
     scopes = ["https://www.googleapis.com/auth/cloud-platform"]
   }
 
+  tags = ["mongo-firewall"]
+
+
   metadata_startup_script = <<-EOF
     #!/bin/bash
     sudo apt-get update
@@ -67,6 +70,10 @@ resource "google_compute_instance" "mongo_instance" {
     # Enable MongoDB authentication
     echo "security:
       authorization: disabled" | sudo tee -a /etc/mongod.conf
+
+    ##Allow external connection to the db
+    sudo sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
+  
 
     # Start MongoDB
     sudo systemctl enable mongod
@@ -88,6 +95,24 @@ resource "google_compute_instance" "mongo_instance" {
   EOF
 }
 
+
+resource "google_compute_firewall" "allow_all_ports" {
+  name    = "allow-all-ports"
+  network = "default"
+  project = "k8s-proj-439420"
+
+  allow {
+    protocol = "tcp"
+    ports    = ["0-65535"]
+  }
+
+  allow {
+    protocol = "udp"
+    ports    = ["0-65535"]
+  }
+
+  target_tags = ["mongo-firewall"]
+}
 
 
 # Output MongoDB instance IP for dynamic URI construction

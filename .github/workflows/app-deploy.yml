@@ -34,7 +34,6 @@ jobs:
         run: |
           MONGO_URI=$(gcloud secrets versions access latest --secret=MONGO_URI)
           echo "MONGODB_URI=$MONGO_URI" >> $GITHUB_ENV
-          echo "force app update"
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
