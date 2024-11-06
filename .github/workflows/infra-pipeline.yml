@@ -44,7 +44,7 @@ jobs:
         #Allow to continue on error, for demo purposes
       - name: Terrascan IaC scanner
         uses: tenable/terrascan-action@v1.4.1
-        ontinue-on-error: true
+        continue-on-error: true
 
 
 

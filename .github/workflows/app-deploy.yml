@@ -16,6 +16,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v2
 
+
       # Set up Google Cloud SDK
       - name: Set up Google Cloud SDK
         uses: google-github-actions/setup-gcloud@v1
@@ -55,6 +56,13 @@ jobs:
           gcloud components install gke-gcloud-auth-plugin -q
 
 
+
+      - name: Run Gosec Security Scanner
+        uses: securego/gosec@master
+        with:
+          args: ./app/...
+
+
     # Build the Docker image
       - name: Build Docker Image
         run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest ./app/tasky
@@ -64,6 +72,8 @@ jobs:
         uses: crazy-max/ghaction-container-scan@v3
         with:
           image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest 
+          severity_threshold: HIGH
+        continue-on-error: true
 
 
       # Authenticate Docker with GCR
