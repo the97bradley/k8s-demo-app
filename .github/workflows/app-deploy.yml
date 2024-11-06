@@ -60,6 +60,12 @@ jobs:
         run: docker build -t gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest ./app/tasky
 
 
+      - name: Scan Docker image
+        uses: crazy-max/ghaction-container-scan@v3
+        with:
+          image: gcr.io/${{ secrets.GCP_PROJECT_ID }}/tasky-image:latest 
+
+
       # Authenticate Docker with GCR
       - name: Authenticate Docker to GCR
         run: gcloud auth configure-docker
