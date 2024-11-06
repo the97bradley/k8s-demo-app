@@ -25,6 +25,10 @@ resource "google_cloudfunctions_function" "mongo_backup_function" {
 
 }
 
+resource "google_compute_address" "mongo_static_ip" {
+  name   = "mongo-static-ip"
+  region = "us-central1"
+}
 
 
 resource "google_compute_instance" "mongo_instance" {
@@ -40,8 +44,11 @@ resource "google_compute_instance" "mongo_instance" {
 
   network_interface {
     network = "default"
-    access_config {}
+    access_config {
+      nat_ip = google_compute_address.mongo_static_ip.address
+    }
   }
+
 
   service_account {
     email  = "mongo-vm-account@k8s-proj-439420.iam.gserviceaccount.com"
