@@ -4,7 +4,7 @@ kind: Ingress
 metadata:
   name: {{ include "tasky-chart.fullname" . }}
   annotations:
-    kubernetes.io/ingress.class: gce
+    spec.ingressClassName: gce
 spec:
   rules:
     - host: bradleysproject.duckdns.org

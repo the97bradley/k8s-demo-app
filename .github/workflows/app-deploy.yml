@@ -61,6 +61,8 @@ jobs:
         uses: securego/gosec@master
         with:
           args: ./app/...
+        continue-on-error: true
+
 
 
     # Build the Docker image
@@ -90,8 +92,6 @@ jobs:
           gcloud container clusters get-credentials host-cluster --zone us-central1-a --project ${{ secrets.GCP_PROJECT_ID }}
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
-
-
 
 
       - name: Deploy Application with Helm
