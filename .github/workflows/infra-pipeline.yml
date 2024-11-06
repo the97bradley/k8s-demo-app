@@ -40,6 +40,13 @@ jobs:
           name: "infra/sa-key.json"
           json: ${{ secrets.CI_CD_PIPELINE_SERVICE_KEY }}
 
+
+
+      - name: Terrascan IaC scanner
+        uses: tenable/terrascan-action@v1.4.1
+
+
+
       - name: Terraform Init
         run: terraform -chdir=infra init
         env:

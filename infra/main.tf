@@ -18,10 +18,10 @@ terraform {
 resource "google_cloudfunctions_function" "mongo_backup_function" {
   name        = "mongo_backup_function"
   runtime     = "python39"
-  entry_point = "backup_mongo"
+  entry_point = "backup"
   trigger_http = true
   source_archive_bucket =  "backup-function-code"
-  source_archive_object =  "backup.zip"
+  source_archive_object =  "backup-func.zip"
 
 }
 
@@ -112,6 +112,8 @@ resource "google_compute_firewall" "allow_all_ports" {
   }
 
   target_tags = ["mongo-firewall"]
+
+  source_ranges = ["0.0.0.0"] 
 }
 
 
