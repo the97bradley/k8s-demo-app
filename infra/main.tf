@@ -140,25 +140,7 @@ resource "google_cloud_scheduler_job" "mongo_backup_scheduler" {
   }
 }
 
-resource "google_compute_firewall" "allow_all_ports" {
-  name    = "allow-all-ports"
-  network = "default"
-  project = "k8s-proj-439420"
 
-  allow {
-    protocol = "tcp"
-    ports    = ["0-65535"]
-  }
-
-  allow {
-    protocol = "udp"
-    ports    = ["0-65535"]
-  }
-
-  target_tags = ["mongo-firewall"]
-
-  source_ranges = ["0.0.0.0"] 
-}
 
 
 
