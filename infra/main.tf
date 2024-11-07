@@ -171,7 +171,7 @@ resource "google_container_cluster" "primary" {
 
 
 
-  initial_node_count = 4
+  initial_node_count = 2
 
 
 
