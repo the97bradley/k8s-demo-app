@@ -72,7 +72,7 @@ resource "google_compute_instance" "mongo_instance" {
       authorization: disabled" | sudo tee -a /etc/mongod.conf
 
     ##Allow external connection to the db
-    sudo sed -i 's/bindIp: 127.0.0.1/bindIp: 0.0.0.0/' /etc/mongod.conf
+    sudo sed -i 's/bindIp: 127.0.0.1/bindIp: "*"/' /etc/mongod.conf
   
 
     # Start MongoDB
